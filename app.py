@@ -11,7 +11,7 @@ NOTION_TOKEN = os.getenv("NOTION_TOKEN")
 NOTION_VERSION = "2022-06-28"
 NOTION_API_URL = "https://api.notion.com/v1"
 
-# ---- MCP tool definitions for SSE ----
+# ---- MCP tool definitions ----
 tool_defs = [
     {
         "name": "search",
@@ -42,15 +42,26 @@ tool_defs = [
 ]
 
 # ---- SSE endpoint ----
-@app.get("/sse/")
+@app.get("/sse")
 async def sse():
     async def event_generator():
-        for tool in tool_defs:
-            yield f"data: {json.dumps({'tool': tool})}\n\n"
+        # Announce all tools in one block
+        yield f"data: {json.dumps({'tools': tool_defs})}\n\n"
+
+        # Keep-alive pings
         while True:
             yield ": ping\n\n"
             await asyncio.sleep(20)
-    return StreamingResponse(event_generator(), media_type="text/event-stream")
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "Transfer-Encoding": "chunked"
+        }
+    )
 
 # ---- MCP tool endpoints ----
 @app.post("/tools/search")
