@@ -41,14 +41,15 @@ tool_defs = [
     }
 ]
 
+@app.get("/")
+def root():
+    return {"status": "ok"}
+
 # ---- SSE endpoint ----
 @app.get("/sse")
 async def sse():
     async def event_generator():
-        # Announce all tools in one block
         yield f"data: {json.dumps({'tools': tool_defs})}\n\n"
-
-        # Keep-alive pings
         while True:
             yield ": ping\n\n"
             await asyncio.sleep(20)
